@@ -1,0 +1,217 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Spatial Tests</title>
+	<script src="oojs.js"></script>
+	<script src="UnitTest.js"></script>
+	<script src="SpatialLib.js"></script>
+</head>
+<body>
+	
+	<script type="text/javascript">
+		DEBUGMODE = true;
+
+		console.log(SpatialLib);
+
+		var unit = new SpatialLib.Vector(1, 1) // unit
+			, unit2 = new SpatialLib.Vector(2, 2) // twice unit
+			, unit3 = new SpatialLib.Vector(3, 3) // twice unit
+			, p1 = new SpatialLib.Vector(5, 10)
+			, p2 = new SpatialLib.Vector(3, 4)
+			, p3 = p2.clone().shift(4)
+			, origin = new SpatialLib.Vector(0, 0)
+			, r1 = new SpatialLib.Rectangle(p1, p2)
+			, r2 = new SpatialLib.Rectangle(5, 10, 3, 4)
+		;
+
+		// ------- clone
+		UnitTests.AssertEqual("Vector.clone (same)"
+			, true
+			, unit.clone().equals(unit)
+		);
+		UnitTests.AssertNotEqual("Vector.clone (different)"
+			, true
+			, p2.equals(p3)
+		);
+
+
+		// ------- distance, magnitude
+		UnitTests.AssertEqual("Vector.magnitude"
+			, unit.magnitude()
+			, 1.41421
+			, true
+		);
+		UnitTests.AssertEqual("Vector.distance between points"
+			, p1.distance(p2)
+			, 6.3
+			, true
+		);
+		UnitTests.AssertEqual("Vector.distance between coords"
+			, p1.distance(p2.x, p2.y)
+			, 6.3
+			, true
+		);
+
+		UnitTests.AssertEqual("Vector.distance between points reversed"
+			, p1.distance(p2)
+			, p2.distance(p1)
+			, true
+		);
+
+		UnitTests.AssertEqual("Vector.distance from origin vs magnitude"
+			, p1.distance(origin)
+			, p1.magnitude()
+			, true
+		);
+
+
+
+		// ------- equality
+		UnitTests.AssertEqual("Vector.equals self"
+			, true
+			, unit.equals(unit)
+		);
+		UnitTests.AssertEqual("Vector.equals"
+			, unit
+			, unit
+			, true
+		);
+		UnitTests.AssertNotEqual("Vector.equals origin vs unit"
+			, origin
+			, unit
+			, true
+		);
+		UnitTests.AssertNotEqual("Vector.equals origin vs unit"
+			, true
+			, origin.equals(unit)
+		);
+
+
+
+		// ------- scale
+		UnitTests.AssertEqual("Vector.scale unit by 3 vs 3*unit (magnitude)"
+			, unit.clone().scale(3).magnitude()
+			, unit3.magnitude()
+		);
+		UnitTests.AssertEqual("Vector.scale unit by 2 vs 2*unit (magnitude)"
+			, unit.clone().scale(2).magnitude()
+			, unit2.magnitude()
+		);
+		UnitTests.AssertEqual("Vector.scale unit by 2 vs 2*unit (magnitude)"
+			, unit.clone().scale(2).magnitude()
+			, unit2.magnitude()
+		);
+		UnitTests.AssertEqual("Vector.scale unit by 3,4 vs p2 (magnitude)"
+			, unit.clone().scale(3,4).magnitude()
+			, p2.magnitude()
+		);
+		var p2_neg = p2.clone().scale(-1);
+		UnitTests.AssertEqual("Vector.scale -p2 vs p2 (magnitude)"
+			, p2_neg.magnitude()
+			, p2.magnitude()
+		);
+		UnitTests.AssertEqual("Vector.scale -p2 vs p2 (values)"
+			, p2_neg.x + p2.x
+			, p2_neg.y + p2.y
+		);
+		// ------- shift
+		UnitTests.AssertEqual("Vector.shift unit + (2) vs 3*unit (magnitude)"
+			, unit.clone().shift(2).magnitude()
+			, unit3.magnitude()
+		);
+		UnitTests.AssertEqual("Vector.shift unit + (2, 2) vs 3*unit (magnitude)"
+			, unit.clone().shift(2, 2).magnitude()
+			, unit3.magnitude()
+		);
+		UnitTests.AssertEqual("Vector.shift unit + (unit2) vs 3*unit (magnitude)"
+			, unit.clone().shift(unit2).magnitude()
+			, unit3.magnitude()
+		);
+
+		// ------- normalize
+		UnitTests.log("normalized unit", unit.clone().normalize());
+		UnitTests.log("normalized unit1", unit2.clone().normalize());
+		UnitTests.log("normalized unit2", unit3.clone().normalize());
+		UnitTests.log("normalized p1", p1.clone().normalize());
+		UnitTests.log("normalized p2", p2.clone().normalize());
+
+		var unit_n = unit.clone().normalize();
+		var unit3_n = unit3.clone().normalize()
+		UnitTests.AssertEqual("Vector.normalize unit3 vs unit (x)"
+			, unit_n.x
+			, unit3_n.x
+			, true
+		);
+		UnitTests.AssertEqual("Vector.normalize unit3 vs unit (y)"
+			, unit_n.y
+			, unit3_n.y
+			, true
+		);
+		UnitTests.AssertEqual("Vector.normalize unit2 vs unit (actually okay)"
+			, unit.clone().normalize()
+			, unit2.clone().normalize()
+		);
+
+		// ------- project
+		var unit_u = unit.clone().projection(unit);
+		var unit2_u = unit2.clone().projection(unit);
+		var unit3_u = unit3.clone().projection(unit);
+		var p1_u = p1.clone().projection(unit);
+		UnitTests.log("projection unit onto unit (before/after)", unit.toString(), unit_u.toString());
+		UnitTests.log("projection unit2 onto unit (before/after)", unit2.toString(), unit2_u.toString());
+		UnitTests.log("projection unit3 onto unit (before/after)", unit3.toString(), unit3_u.toString());
+		UnitTests.log("projection p1 onto unit (before/after)", p1.toString(), p1.project(unit), p1_u.toString());
+
+		// from the triangle vertices example - http://www.vitutor.com/geometry/vec/vector_projection.html
+		// triangle:
+		var ab = new SpatialLib.Vector(-3, 5);
+		var ac = new SpatialLib.Vector(-7, -1);
+		var bc = new SpatialLib.Vector(-4, -6);
+			var ca = ac.clone().scale(-1); // flip orientation, like example
+			var cb = bc.clone().scale(-1); // flip orientation, like example
+
+		UnitTests.log('ab', ab.toString(), ab.magnitude());
+		UnitTests.log('ac', ac.toString(), ac.magnitude());
+		UnitTests.log('ca', ca.toString(), ca.magnitude());
+		UnitTests.log('bc', bc.toString(), bc.magnitude());
+		UnitTests.log('cb', cb.toString(), cb.magnitude());
+
+		var ab_ac = ab.clone().project(ac);
+		var cb_ca = cb.clone().project(ca);
+		// check that both projects add up to the length of the side of the triangle
+		UnitTests.AssertEqual("Vector.project sides of triangle, aggregate"
+			, ac.magnitude()
+			, ab_ac+cb_ca
+			, true
+		);
+
+		// from example http://www.vitutor.com/geometry/vec/vector_projection.html
+		var u1 = new SpatialLib.Vector(2, 1);
+		var v1 = new SpatialLib.Vector(-3, 4);
+		var u1onv1 = new SpatialLib.Vector(6/25, -8/25);
+		UnitTests.log("project u onto v", u1.projection(v1).toString(), u1onv1.toString());
+		UnitTests.AssertEqual("Vector.projection u onto v"
+			, true
+			, u1onv1.equals(u1) // since already projected, reuse
+		);
+
+		UnitTests.AssertEqual("Vector.project unit vs unit3"
+			, true
+			, unit3_u.equals(unit_u)
+		);
+
+
+
+
+		UnitTests.log(r1, r2);
+
+		UnitTests.log("R1:", r1.x(), r1.y(), r1.w(), r1.h());
+		UnitTests.log(r1.toString(), r2.toString());
+
+
+	</script>
+
+</body>
+</html>

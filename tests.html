@@ -1,0 +1,354 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Spatial Tests</title>
+	<script src="oojs.js"></script>
+	<script src="UnitTest.js"></script>
+	<script src="SpatialLib.js"></script>
+</head>
+<body>
+	
+	<h1>Look in Console for test results</h1>
+	<script type="text/javascript">
+		DEBUGMODE = true;
+
+
+
+		console.log(SpatialLib);
+
+		var unit = new SpatialLib.Vector(1, 1) // unit
+			, unit2 = new SpatialLib.Vector(2, 2) // twice unit
+			, unit3 = new SpatialLib.Vector(3, 3) // twice unit
+			, p1 = new SpatialLib.Vector(5, 10)
+			, p2 = new SpatialLib.Vector(3, 4)
+			, p3 = p2.clone().shift(4)
+			, origin = new SpatialLib.Vector(0, 0)
+			, r1 = new SpatialLib.Rectangle(p1, p2)
+			, r2 = new SpatialLib.Rectangle(5, 10, 3, 4)
+			, rUnit = new SpatialLib.Rectangle(10, 10, 1, 1)
+			, rUnit3 = new SpatialLib.Rectangle(10, 10, 3, 3)
+			;
+
+		// ------- clone
+		UnitTests.AssertEqual("Vector.clone (same)"
+			, true
+			, unit.clone().equals(unit)
+		);
+		UnitTests.AssertNotEqual("Vector.clone (different)"
+			, true
+			, p2.equals(p3)
+		);
+
+
+		// ------- distance, magnitude
+		UnitTests.AssertEqual("Vector.magnitude"
+			, unit.magnitude()
+			, 1.41421
+			, true
+		);
+		UnitTests.AssertEqual("Vector.distance between points"
+			, p1.distance(p2)
+			, 6.3
+			, true
+		);
+		UnitTests.AssertEqual("Vector.distance between coords"
+			, p1.distance(p2.x, p2.y)
+			, 6.3
+			, true
+		);
+
+		UnitTests.AssertEqual("Vector.distance between points reversed"
+			, p1.distance(p2)
+			, p2.distance(p1)
+			, true
+		);
+
+		UnitTests.AssertEqual("Vector.distance from origin vs magnitude"
+			, p1.distance(origin)
+			, p1.magnitude()
+			, true
+		);
+
+
+
+		// ------- equality
+		UnitTests.AssertEqual("Vector.equals self"
+			, true
+			, unit.equals(unit)
+		);
+		UnitTests.AssertEqual("Vector.equals"
+			, unit
+			, unit
+			, true
+		);
+		UnitTests.AssertNotEqual("Vector.equals origin vs unit"
+			, origin
+			, unit
+			, true
+		);
+		UnitTests.AssertNotEqual("Vector.equals origin vs unit"
+			, true
+			, origin.equals(unit)
+		);
+
+
+
+		// ------- scale
+		UnitTests.AssertEqual("Vector.scale unit by 3 vs 3*unit (magnitude)"
+			, unit.clone().scale(3).magnitude()
+			, unit3.magnitude()
+		);
+		UnitTests.AssertEqual("Vector.scale unit by 2 vs 2*unit (magnitude)"
+			, unit.clone().scale(2).magnitude()
+			, unit2.magnitude()
+		);
+		UnitTests.AssertEqual("Vector.scale unit by 2 vs 2*unit (magnitude)"
+			, unit.clone().scale(2).magnitude()
+			, unit2.magnitude()
+		);
+		UnitTests.AssertEqual("Vector.scale unit by 3,4 vs p2 (magnitude)"
+			, unit.clone().scale(3,4).magnitude()
+			, p2.magnitude()
+		);
+		var p2_neg = p2.clone().scale(-1);
+		UnitTests.AssertEqual("Vector.scale -p2 vs p2 (magnitude)"
+			, p2_neg.magnitude()
+			, p2.magnitude()
+		);
+		UnitTests.AssertEqual("Vector.scale -p2 vs p2 (values)"
+			, p2_neg.x + p2.x
+			, p2_neg.y + p2.y
+		);
+		// ------- shift
+		UnitTests.AssertEqual("Vector.shift unit + (2) vs 3*unit (magnitude)"
+			, unit.clone().shift(2).magnitude()
+			, unit3.magnitude()
+		);
+		UnitTests.AssertEqual("Vector.shift unit + (2, 2) vs 3*unit (magnitude)"
+			, unit.clone().shift(2, 2).magnitude()
+			, unit3.magnitude()
+		);
+		UnitTests.AssertEqual("Vector.shift unit + (unit2) vs 3*unit (magnitude)"
+			, unit.clone().shift(unit2).magnitude()
+			, unit3.magnitude()
+		);
+
+		// ------- normalize
+		UnitTests.log("normalized unit", unit.clone().normalize());
+		UnitTests.log("normalized unit1", unit2.clone().normalize());
+		UnitTests.log("normalized unit2", unit3.clone().normalize());
+		UnitTests.log("normalized p1", p1.clone().normalize());
+		UnitTests.log("normalized p2", p2.clone().normalize());
+
+		var unit_n = unit.clone().normalize();
+		var unit3_n = unit3.clone().normalize()
+		UnitTests.AssertEqual("Vector.normalize unit3 vs unit (x)"
+			, unit_n.x
+			, unit3_n.x
+			, true
+		);
+		UnitTests.AssertEqual("Vector.normalize unit3 vs unit (y)"
+			, unit_n.y
+			, unit3_n.y
+			, true
+		);
+		UnitTests.AssertEqual("Vector.normalize unit2 vs unit (actually okay)"
+			, unit.clone().normalize().toString()
+			, unit2.clone().normalize().toString()
+		);
+
+		// ------- project
+
+		// from the triangle vertices example - http://www.vitutor.com/geometry/vec/vector_projection.html
+		// triangle:
+		var ab = new SpatialLib.Vector(-3, 5);
+		var ac = new SpatialLib.Vector(-7, -1);
+		var bc = new SpatialLib.Vector(-4, -6);
+			var ca = ac.clone().scale(-1); // flip orientation, like example
+			var cb = bc.clone().scale(-1); // flip orientation, like example
+
+		UnitTests.log('ab', ab.toString(), ab.magnitude());
+		UnitTests.log('ac', ac.toString(), ac.magnitude());
+		UnitTests.log('ca', ca.toString(), ca.magnitude());
+		UnitTests.log('bc', bc.toString(), bc.magnitude());
+		UnitTests.log('cb', cb.toString(), cb.magnitude());
+
+		var ab_ac = ab.clone().project(ac);
+		var cb_ca = cb.clone().project(ca);
+		// check that both projects add up to the length of the side of the triangle
+		UnitTests.AssertEqual("Vector.project sides of triangle, aggregate"
+			, ac.magnitude()
+			, ab_ac+cb_ca
+			, true
+		);
+
+		// from example http://www.vitutor.com/geometry/vec/vector_projection.html
+		var u1 = new SpatialLib.Vector(2, 1);
+		var v1 = new SpatialLib.Vector(-3, 4);
+		var u1onv1 = new SpatialLib.Vector(6/25, -8/25);
+		UnitTests.log("project u onto v", u1.projection(v1).toString(), u1onv1.toString());
+		UnitTests.AssertEqual("Vector.projection u onto v"
+			, true
+			, u1onv1.equals(u1) // since already projected, reuse
+		);
+
+		var unit_u = unit.clone().projection(unit);
+		var unit2_u = unit2.clone().projection(unit);
+		var unit3_u = unit3.clone().projection(unit);
+		var p1_u = p1.clone().projection(unit);
+		UnitTests.log("projection unit onto unit (before/after)", unit.toString(), unit_u.toString());
+		UnitTests.log("projection unit2 onto unit (before/after)", unit2.toString(), unit2_u.toString());
+		UnitTests.log("projection unit3 onto unit (before/after)", unit3.toString(), unit3_u.toString());
+		UnitTests.log("projection p1 onto unit (before/after)", p1.toString(), p1.project(unit), p1_u.toString());
+
+		UnitTests.AssertEqual("Vector.project unit on unit vs unit3 on unit"
+			, unit3_u.toString()
+			, unit_u.clone().scale(3).toString()
+		);
+		UnitTests.AssertEqual("Vector.project unit on unit vs unit2 on unit"
+			, unit2_u.toString()
+			, unit_u.clone().scale(2).toString()
+		);
+
+		// ------- Rect scale
+		UnitTests.AssertEqual("Rectangle.scale unit -> unit3"
+			, true
+			, rUnit.clone().scale(3).equalDimensions(rUnit3)
+		);
+
+		// ------- Rect fitTo
+		var fitTo5 = rUnit.clone().scale(5)			// square
+			, fitTo23 = new SpatialLib.Rectangle(10, 10, 2, 3)	// portrait
+			, fitTo54 = new SpatialLib.Rectangle(30, 30, 5, 4)	// landscape
+			, bounds11 = rUnit.clone()				// square, shrink
+			, bounds99 = rUnit.clone().scale(9)		// square, grow
+			, bounds23 = new SpatialLib.Point(2, 3)	// portrait, shrink
+			, bounds32 = bounds23.clone().reverse()	// landscape, shrink
+			, bounds45 = new SpatialLib.Point(4, 5)	// portrait, shrink
+			, bounds54 = bounds45.clone().reverse()	// landscape, shrink
+			, bounds39 = new SpatialLib.Point(3, 9)	// portrait, shrink
+			, bounds93 = bounds39.clone().reverse()	// landscape, shrink
+			, bounds1020 = new SpatialLib.Point(10, 20)	// portrait, grow
+			, bounds2010 = bounds1020.clone().reverse()	// landscape, grow
+			;
+
+
+		function TestRectangle_FitTo(description, initial, bound, expected) {
+			
+
+			var result = initial.clone().fitTo(bound);
+
+
+
+			UnitTests.AssertEqual("Rectangle.fitTo: " + description
+				, true
+				, UnitTests.areEqual(result.w(), (expected instanceof SpatialLib.Rectangle ? expected.dimensions : expected).x) && UnitTests.areEqual(result.h(), (expected instanceof SpatialLib.Rectangle ? expected.dimensions : expected).y)//result.equalDimensions(expected)
+				);
+			UnitTests.log("  initial", initial.toString()
+				, "| bound", bound.toString()
+				, "| expected", expected.toString()
+				, "| result", result.toString()
+				);
+		};
+
+
+		function TestRectangle_FitToSomething(initial, bounds
+			, expectedShrink, expectedGrow) {
+			/// <summary>
+			/// Testing rectangle fitto methods
+			/// </summary>
+			/// <param name="initial" type="Rectangle">initial value</param>
+			/// <param name="bounds" type="Point">size container which will be grown/shrank</param>
+			/// <param name="expectedShrink" type="Point">after shrinking (1/2 * bounds), expected bounds</param>
+			/// <param name="expectedGrow" type="Point">after growing (2 * bounds), expected bounds</param>
+
+			var before, after;
+
+			var boundsShrink = bounds.clone().scale(0.5)
+				, boundsGrow = bounds.clone().scale(2)
+				, boundsSameW = new SpatialLib.Point(initial.w(), initial.w())
+				, boundsSameH = new SpatialLib.Point(initial.h(), initial.h())
+			;
+
+
+			before = initial.aspect() > 1 ? "landscape" : initial.aspect() == 1 ? "square" : "portrait";
+			after = bounds.aspect() > 1 ? "landscape" : bounds.aspect() == 1 ? "square" : "portrait";
+
+			TestRectangle_FitTo(before + " => " + after + ", shrink", initial, boundsShrink, expectedShrink);
+			TestRectangle_FitTo(before + " => " + after + ", grow", initial, boundsGrow, expectedGrow);
+			TestRectangle_FitTo(before + " => square, same W", initial, boundsSameW, initial);
+			TestRectangle_FitTo(before + " => square, same H", initial, boundsSameH, initial);
+
+			initial.dimensions.reverse();
+			before = initial.aspect() > 1 ? "landscape" : initial.aspect() == 1 ? "square" : "portrait";
+
+			TestRectangle_FitTo(before + " => " + after + ", shrink", initial, boundsShrink.reverse(), expectedShrink.reverse());
+			TestRectangle_FitTo(before + " => " + after + ", grow", initial, boundsGrow.reverse(), expectedGrow.reverse());
+			TestRectangle_FitTo(before + " => square, same W", initial, boundsSameW, initial);
+			TestRectangle_FitTo(before + " => square, same H", initial, boundsSameH, initial);
+		}//--- TestRectangle_FitToSomething
+
+
+
+		var fitToSquare = new SpatialLib.Rectangle(10, 10, 5, 5);
+		var fitToLandscape = new SpatialLib.Rectangle(10, 10, 5, 3);
+		var fitToPortrait = new SpatialLib.Rectangle(10, 10, 15, 20);
+
+
+		UnitTests.log("==============================");
+
+		// ----- fitto square
+		TestRectangle_FitToSomething(fitToSquare, rUnit.clone().scale(3).dimensions
+			, new SpatialLib.Point(1.5, 1.5)
+			, new SpatialLib.Point(6, 6)
+			);
+		// ----- fitto square
+		TestRectangle_FitToSomething(fitToLandscape, rUnit.clone().scale(3).dimensions
+			, new SpatialLib.Point(1.5, 1.5 * 3/5)
+			, new SpatialLib.Point(6, 6 * 3/5)
+			);
+		// ----- fitto square
+		TestRectangle_FitToSomething(fitToPortrait, rUnit.clone().scale(12).dimensions
+			, new SpatialLib.Point(6 * 15 / 20, 6)
+			, new SpatialLib.Point(24 * 15 / 20, 24)
+			);
+
+
+		UnitTests.log("==============================");
+
+		// ----- getBounds
+		var shapes = [
+			new SpatialLib.Rectangle(3, 5, 2, 4)
+			, new SpatialLib.Rectangle(9, 6, 1, 2)
+			, new SpatialLib.Rectangle(5, 5, 10, 3)
+			, new SpatialLib.Rectangle(7, 2, 4, 6)
+		];
+
+		var bounds = SpatialLib.Rectangle.getBounds(shapes);
+
+		UnitTests.log("bounds =", bounds.toString());
+		// now loop to double-check that the bounds contains each shape
+		var result = true;
+		for (var i in shapes) {
+			result = result && bounds.contains(shapes[i]);
+		}
+		UnitTests.AssertEqual("Rectangle.getBounds (loop)"
+			, true
+			, result
+			);
+
+
+		// also check without loop
+		UnitTests.AssertEqual("Rectangle.getBounds"
+			, true
+			, bounds.contains(shapes)
+			);
+
+
+
+	</script>
+
+</body>
+</html>
