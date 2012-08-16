@@ -264,12 +264,12 @@
 			// initialize with two points
 			if (x instanceof lib.Point && y instanceof lib.Point) {
 				this.origin = new lib.Point(x.x, x.y);
-				this.dimensions = new lib.Point(y.x, y.y);
+				this.dimensions = new lib.Size(y.x, y.y);
 			}
 			// otherwise, we're given coords
 			else {
 				this.origin = new lib.Point(x, y);
-				this.dimensions = new lib.Point(w, h);
+				this.dimensions = new lib.Size(w, h);
 			}
 		}
 		,
