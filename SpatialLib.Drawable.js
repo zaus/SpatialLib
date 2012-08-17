@@ -8,7 +8,7 @@
 		_defaults : {
 			attachTo: false
 				, selector: '.' + NS.css + '-drawable' // how to target with jquery
-				, scale: 20 // px per unit for converting from coordinates to pixels
+				, scale: 1 // px per unit for converting from coordinates to pixels
 				, canvas: '#canvas' // default canvas element
 		}
 		,
@@ -135,7 +135,7 @@
 				, 'width': this.Shape.w() * this.options.scale
 				, 'height': this.Shape.h() * this.options.scale
 				// http://www.byteblocks.com/post/2011/04/25/How-to-draw-ellipse-using-CSS.aspx
-				, 'border-radius': dw + "px / " + dh + "px"
+				, 'border-radius': (dw * this.options.scale) + "px / " + (dh * this.options.scale) + "px"
 			});
 
 			this.$el.addClass(NS.css + '-drawable-ellipse');
