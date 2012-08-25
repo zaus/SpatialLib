@@ -1,0 +1,105 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Canvasable | Spatial Tests</title>
+
+	<script src="oojs.js"></script>
+	<script src="SpatialLib.js"></script>
+
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
+	<script src="SpatialLib.Canvasable.js"></script>
+
+
+	<style type="text/css">
+		* { box-sizing: border-box; }
+		canvas { border: 1px solid black; }
+		.canvas-wrap { position:relative; display:inline-block;  margin:2em; }
+		.spatial-axes { position:absolute; }
+			.spatial-origin {
+				top: -2em;
+				left:-2em;
+			}
+			.spatial-outer {
+				bottom: -2em;
+				right:-2em;
+			}
+
+	</style>
+</head>
+<body>
+	
+	<h1>SpatialLib Canvasable Tests</h1>
+	<div class="canvas-wrap"><canvas id="canvas" width="200" height="200"></canvas></div>
+	<div class="canvas-wrap"><canvas id="canvas2" width="200" height="200"></canvas></div>
+	<div class="canvas-wrap"><canvas id="canvas3" width="400" height="400"></canvas></div>
+	<div class="canvas-wrap"><canvas id="plot" width="1000" height="1000"></canvas></div>
+
+	<script type="text/javascript">
+		;(function($){
+			DEBUGMODE = true;
+
+
+			/// list of shapes to draw
+			var shapes = [
+				new SpatialLib.Rectangle(3, 5, 2, 4)
+				, new SpatialLib.Rectangle(9, 8, 1, 2)
+				, new SpatialLib.Rectangle(5, 4, 10, 3)
+				, new SpatialLib.Rectangle(7, 2, 4, 6)
+				, new SpatialLib.Rectangle(7, 2, 4, 6)
+			];
+			/// list of canvasable objects
+			var canvasable = [];
+
+			/// drawing surface and scale
+			SpatialLib.Canvasable.canvasInit('#canvas', 100);
+			SpatialLib.Canvasable.canvasInit('#canvas2', 50);
+			SpatialLib.Canvasable.canvasInit('#canvas3', 100);
+
+			/// get bounding box
+			var bounds = SpatialLib.Rectangle.getBounds(shapes);
+			console.log("Bounding Container:", bounds.toString());
+
+			// add to canvas
+			for (var i in shapes) {
+				console.log("adding shape ", i, shapes[i].toString());
+				canvasable.push(new SpatialLib.CanvasableRect(shapes[i], { scale: true } ) );
+			}
+
+			// add to another canvas
+			for (var i in shapes) {
+				console.log("adding shape ", i, shapes[i].toString());
+				canvasable.push(new SpatialLib.CanvasableRect(shapes[i], { canvas: '#canvas2', scale: true, ink: 'stroke', strokeWidth: 0.5 }));
+			}
+
+			// fit
+			var $canvas3 = $('#canvas3')
+				, newBounds = new SpatialLib.Point($canvas3.width(), $canvas3.height())
+			;
+
+			console.log("Comparing bounds:", bounds.toString(), newBounds.toString());
+
+			SpatialLib.Rectangle.fitTo(shapes, newBounds);
+			// add to another canvas
+			for (var i in shapes) {
+				canvasable.push(new SpatialLib.CanvasableEllipse(shapes[i], { canvas: '#canvas3', scale: 1 }));
+			}
+
+
+
+			// ----------- "plotting"
+			var plotW = 500, plotH = 200;
+			SpatialLib.Canvasable.canvasInit('#plot', plotW);
+			var points = [];
+			for(var i = 0; i < plotW; i++ ) {
+				points.push(new SpatialLib.Point(i,Math.random()*plotH));
+			}
+			new SpatialLib.CanvasablePolygon( points, { scale: true, canvas: '#plot', ink: 'stroke', pointSize:2, close: false } );
+
+
+		})(jQuery);
+	</script>
+
+</body>
+</html>
