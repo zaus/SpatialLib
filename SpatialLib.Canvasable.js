@@ -23,7 +23,7 @@
 			, strokeColor: '#000000' // default drawing color
 			, fillColor: '#000000' // default drawing color
 			, ink: 'fill' // drawing method - fill or stroke
-			, strokeWidth: 3
+			, strokeWidth: 1
 		}
 		,
 		_init: function (shape, options) {
@@ -59,7 +59,11 @@
 		,
 		Draw: function () {
 			debug("rendering index", this.index, this);
-			return this.render(); // set appropriate properties on element
+			this.$el.save(); // pause settings
+			this.configureContext(); // current settings
+			var result = this.render(); // do the drawing
+			this.$el.restore(); // restore previous settings
+			return result;
 		}
 		,
 		Erase: function() {
@@ -71,7 +75,6 @@
 			this.$el.fillStyle = this.options.fillColor;
 			this.$el.strokeStyle = this.options.strokeColor;
 			this.$el.lineWidth = this.options.strokeWidth;
-			this.$el.save();
 		}
 
 	});
@@ -120,8 +123,7 @@
 
 	lib.CanvasablePolygon = lib.Canvasable._derive({
 		_defaults: $.extend({}, lib.Canvasable.prototype._defaults, {
-				'close': true
-				, 'pointSize': false
+				'pointSize': false
 			})
 		/*
 		,
@@ -148,42 +150,32 @@
 		}
 		,
 		render: function(){
-			// no shapes?  don't do anything
-			if( ! (this.Shape instanceof Array && this.Shape.length > 0) ) return false;
-			// is first shape a point?  assumes rest will be the same
-			if( ! this.Shape[0] instanceof lib.Point ) return false;
+			if( ! this.Shape instanceof lib.Polygon ) return false;
 
-			var scaled = function(shape, scale){
-				/// <summary>Helper function to scale points</summary>
-				return shape.clone().scale(scale);
-			}
+			var shape = this.Shape.clone().scale(this.options.scale); // so we can non-destructively scale
 
 			// start polygon
 			this.$el.beginPath();
-			// move to starting point
-			var points = [];
-			var scaledShape = scaled(this.Shape[0], this.options.scale);
-			this.$el.moveTo( scaledShape.x, scaledShape.y );
+			// move to starting point, first vertex
+			this.$el.moveTo( shape.vertex(0).x, shape.vertex(0).y );
 
-			// shape is actually the collection
-			for(var s in this.Shape) {
-				scaledShape = scaled(this.Shape[s], this.options.scale);
-				// if we're adding a point at the vertex too, gotta remember the point
-				if( false !== this.options.pointSize ) points.push( scaledShape );
-				this.$el.lineTo( scaledShape.x, scaledShape.y );
-			}
+			var MYSELF = this; // to pass to foreach
+			shape.foreach(function(o){
+				MYSELF.$el.lineTo( o.x, o.y );
+			});
 
-			if( this.options.close ) this.$el.closePath();
+			if( this.Shape.closedPath ) this.$el.closePath();
 			this.ink();
 			
 			// now, if we're adding points to the vertexes, do it
-			for( var p in points ) {
-				this.$el.beginPath();
-				this.$el.arc( points[p].x-this.options.pointSize, points[p].y-this.options.pointSize, this.options.pointSize, 0, 2*Math.PI);
-				this.$el.fill();
+			if( this.options.pointSize > 0 ) {
+				shape.foreach(function(o){
+					MYSELF.$el.beginPath();
+					MYSELF.$el.arc( o.x, o.y, MYSELF.options.pointSize, 0, 2*Math.PI);
+					MYSELF.$el.fill();
+				});
 			}
-
-		}
+		}//	fn	render
 	});
 
 	lib.CanvasableRect = lib.Canvasable._derive({
@@ -201,9 +193,6 @@
 		}
 		,
 		render: function () {
-			// set properties according to shape
-			this.configureContext();
-
 			var scaledShape = this.Shape.clone().scale({ scaleOrigin: true, both: this.options.scale });
 			
 			debug(this.Shape.toString(), ' x ', this.options.scale, ' = ', scaledShape.toString())

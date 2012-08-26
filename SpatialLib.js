@@ -29,6 +29,15 @@
 		return a;
 	};
 
+	var _debug = function(){
+		/// <summary>Debug log</summary>
+		
+		if( true === DEBUGMODE && console && console.log ) {
+			if( console.log.apply ) console.log.apply(console, Array.prototype.slice.call(arguments,0));
+			else console.log(Array.prototype.slice.call(arguments,0));
+		}
+	};
+
 
 	lib.Point = Class._derive({
 		//#region ---------- setup ------------
@@ -250,6 +259,268 @@
 			return this; // chain
 		}
 	});
+
+	lib.Polygon = Class._derive({
+		_defaults: {
+			'closedPath': true // does the last point "connect" to the first
+		}
+		,
+		_init: function(points, options) {
+			/// <summary>Create new polygon</summary>
+			/// <param name="points" type="Array">either an array of Points, or list of numbers (which will be paired), or a mix of the two</param>
+			/// <param name="options" type="JSON">option overrides</param>
+			
+			if( ! points instanceof Array ) return false; // quit, can't use it
+
+			this.options = _extend({}, this._defaults, options);
+
+			/// <field name="Points" type="Array">the list of vertices in the polygon
+			this.Points = [];
+
+			// process each point
+			var numPoints = points.length, point, point2;
+			for(var i = 0; i < numPoints; i++){
+				point = points[i];
+				// add Point directly
+				if( point instanceof lib.Point ) {
+					this.Points.push( point );
+				}
+				// otherwise, have to make a Point from this and next item; assume type is correct
+				else {
+					this.Points.push( new lib.Point(point, points[++i]));
+				}
+			}
+		}//	fn	_init
+		,
+		clone: function() {
+			// clone the points
+			var points = [];
+			this.foreach(function(o){ points.push(o.clone()); });
+
+			// make a new one
+			return new lib.Polygon(points, this.options);
+		}
+		,
+
+		//#region -------------- vertices ------------
+		
+		vertex: function(nth){
+			/// <summary>Get the nth vertex</summary>
+			
+			return this.Points[nth];
+		}
+		,
+		numVertices: function() {
+			/// <summary>Get the number of points in the shape</summary>
+
+			return this.Points.length;
+		}
+		,
+		addVertex: function(v, at) {
+			// append
+			if( undefined === at ) {
+				this.Points.push(v);
+			}
+			// insert
+			else {
+				this.Points.splice(at, 0, v);
+			}
+		}
+		,
+		removeVertex: function(atOrVertex, matchfn) {
+			/// <summary>remove the given vertex, either by index or by matching the vertex</summary>
+			/// <param name="atOrVertex" type="int|Point">either the index to remove, or a Point to look for and remove</param>
+			/// <param name="matchfn" type="function">if <paramref cref="atOrVertex" /> is a Point, then use this function to determine matching (by x, y, or both coordinates); if not provided will match whole Point</param>
+			/// <returns>this for chaining, or the actual index if we were matching</returns>
+
+			if( atOrVertex instanceof lib.Point ) {
+				// default match
+				if( undefined === matchfn ) matchfn = function(a, b) { return a.equals(b); }
+
+				// find it
+				this.foreach(function(p,n) {
+					if( matchfn(p, atOrVertex) ) {
+						atOrVertex = n; // reuse
+						return false; // break
+					}
+				});
+			}
+
+			// remove at index
+			this.Points.splice(atOrVertex, 1);
+
+			if( matchfn ) return atOrVertex; // return the index, in case we were matching
+
+			return this; // chain
+		}
+
+		//#endregion -------------- vertices ------------
+		
+		,
+		foreach: function(cb) {
+			/// <summary>foreach loop over points using callback</summary>
+			/// <param name="cb" type="function">callback function to apply to each vertex; provide as fn(vertex, index)</param>
+			for(var i in this.Points) {
+				// allow short-circuitng
+				if( false === cb.call(this, this.vertex(i), i) ) return; // in scope
+			}
+		}
+		,
+		shift: function (p, y) {
+			/// <summary>
+			/// Add the given offset (as either another Point or values)
+			/// </summary>
+			/// <param name="p" type="Point|int">either another Point, or a single scalar, or if y also provided, then this is the x-coord</param>
+			/// <param name="y" type="int">(optional) the y-coord of the second point.  If provided, then <paramref name="p" /> is the x-coord.</param>
+
+			this.foreach(function(o){ o.shift(p, y); });
+
+			return this; // chain
+		}
+		,
+		scale: function (p, y) {
+			/// <summary>
+			/// Multiply by the given offset (as either another Point or values)
+			/// </summary>
+			/// <param name="p" type="Point|int">either another Point, or a single scalar, or if y also provided, then this is the x-coord</param>
+			/// <param name="y" type="int">(optional) the y-coord of the second point.  If provided, then <paramref name="p" /> is the x-coord.</param>
+
+			this.foreach(function(o){ o.scale(p, y); });
+
+			return this; // chain
+		}
+		,
+		bounds: function(){
+			// cached
+			if( undefined === this._bounds ) {
+				var
+					minX = Number.POSITIVE_INFINITY
+					, minY = Number.POSITIVE_INFINITY
+					, maxX = Number.NEGATIVE_INFINITY
+					, maxY = Number.NEGATIVE_INFINITY
+				;
+
+				this.foreach(function(item) {
+					// min -- technically, we only care if `trim`
+					if (item.x < minX) minX = item.x;
+					else if (item.x > maxX) maxX = item.x;
+
+					if (item.y < minY) minY = item.y;
+					else if (item.y > maxY) maxY = item.y;
+				});
+
+				// here we would check if "trim", and if not return (0,0) for the origin
+				// instead of (minX, minY)
+				// or we would have ignored the "min" checking above
+
+				// save for later
+				this._bounds = new lib.Rectangle(minX, minY, maxX-minX, maxY-minY);
+			}
+
+			return this._bounds.clone();
+		}
+		,
+		fitTo: function(bounds, fitToOrigin, returnFactor) {
+			var mybounds = this.bounds();
+			var scale = mybounds.fitTo(bounds, false, true);
+			this.scale(scale);
+
+			// also shift to fit in shape
+			if(this.fitToOrigin){
+				mybounds.scale(scale); // adjust, so we get the right offset
+				this.shift(bounds.x() - mybounds.x(), bounds.y() - mybounds.y() );
+			}
+		}
+		// == cool todos ==
+		//, contains
+		//, intersection
+		//, center
+	});
+
+	/// <field name="Plot" type="SpatialLib">multi-point line for plotting; essentially an open Polygon</field>
+	lib.Plot = lib.Polygon._derive({
+		_defaults: {
+			'closedPath': false
+		}
+		,
+		clone: function() {
+			// clone the points
+			var points = [];
+			this.foreach(function(o){ points.push(o.clone()); });
+
+			// make a new one
+			return new lib.Plot(points, this.options);
+		}
+		,
+		smooth: function(overPoints, isYAxis, weightingFn) {
+			/// <summary>apply an average over the given number of points around each point to smooth the polygon</summary>
+			/// <param name="overPoints" type="int">the number of points to average before and after each point</param>
+			/// <param name="isYAxis" type="bool">(default: true) if explicitly set to false, will apply smoothing to X-axis instead</param>
+			/// <param name="weightingFn" type="function">if provided, use to apply an additional weight to each point; use like <example>fn(offset, coordinate)</example></param>
+			/// <returns>modifies this shape and returns it</returns>
+			
+			var i
+				, sum
+				, divisor = 2*overPoints+1 // avg = sum(values) / num(values); divisor = num(values); num(values) = (overPoints before) + current_point + (overPoints after)
+				, coord
+				, avgd = []	// save the new points so we can reapply them
+				, avgdl
+				, getc = false !== isYAxis ? function(p) { return p.y; } : function(p){ return p.x; } // which point are we getting
+				, setc = false !== isYAxis ? function(p, v) { p.y = v; } : function(p, v){ p.x = v; } // which point are we setting
+				;
+
+				_debug('getter', getc); debugger;
+			// if weightingFn not supplied, weight = 1
+			if( undefined === weightingFn || typeof weightingFn != "function" )
+				weightingFn = function() { return 1; }
+
+			this.foreach(function(p, n) {
+				// start with current point
+				sum = getc(p)
+				// get offsets
+				for(i = 1; i <= overPoints; i++) {
+					// before
+					coord = this.vertex(n-i);
+					if( undefined !== coord ) {
+						coord = getc( coord );
+						sum += coord * weightingFn(i, coord);
+					}
+					_debug('    ', n, i, n-i, coord, sum);
+					// after
+					coord = this.vertex(n+i);
+					if( undefined !== coord ) {
+						coord = getc( coord );
+						sum += coord * weightingFn(i, coord);
+					}
+					_debug('    ', n, i, n+i, coord, sum);
+				}
+				avgd.push( [sum / divisor] );
+
+				_debug('weighted avg on ' + overPoints + ':', n, p.toString(), getc(p), divisor, sum/divisor);
+			});
+
+			avgdl = avgd.length-1;
+
+			// fix the head and tail
+			// overpoints:nth:	n0	n1	n2	n3	n4	n5	n6	n7	n8	n9
+			// 		ex.		3:	4	5	6	7	7	7	7	6	5	4
+			//		ex.		2:	3	4	5	5	5	5	5	5	4	3
+			//		ex.		o:	o+1	o+2	o+n	o+n	o+n	o+n	...	o+3	o+2	o+1
+			for(i = 0; i < overPoints; i++) {
+				sum = divisor / (overPoints+i+1); // reuse
+				avgd[i] *= sum; // head
+				avgd[avgdl-i] *= sum; // tail
+			}
+
+			// update points
+			this.foreach(function(p, n){
+				setc(p, avgd[n]);
+			});
+
+			return this; // chain
+		}//	fn	smooth
+	});
+
 
 	lib.Rectangle = Class._derive({
 		_init: function (x, y, w, h) {
@@ -522,7 +793,7 @@
 		}
 		,
 
-		fitTo: function (/*lib.Point*/ bounds, /*bool*/ fitOriginIfRect, /*bool*/ returnFactor) {
+		fitTo: function (bounds, fitOriginIfRect, returnFactor) {
 			/// <summary>
 			/// Scale shape to fit within bounds, preserving aspect ratio.
 			/// </summary>
@@ -575,16 +846,12 @@
 		/// <summary>
 		/// Given a list of shapes, find the outermost bounding vertices containing all the shapes
 		/// </summary>
-		/// <param name="list" type="Array{Rectangle}">the list of shapes to bound</param>
+		/// <param name="list" type="Array{Rectangle|Polygon|Point}">the list of shapes to bound</param>
 		/// <returns>the new boundary shape</returns>
 
 		// if we're not given a list
 		if (! list instanceof Array) {
-			if (! list instanceof lib.Rectangle) {
-				return false; // error
-			}
-
-			return list; // if we just have one Rectangle, it's bounded by itself
+			return false;
 		}// is !Array
 
 		// loop, find the min/max vertex from the list
@@ -596,6 +863,10 @@
 		;
 		for (var i in list) {
 			var item = list[i];
+			// special handling for type
+			if( item instanceof lib.Polygon ) item = item.bounds();
+			else if( item instanceof lib.Point ) item = new lib.Rectangle(item.x, item.y, 0, 0);
+			// otherwise, assume rectangle
 
 			// min -- technically, we only care if `trim`
 			if (item.x() < minX) minX = item.x();

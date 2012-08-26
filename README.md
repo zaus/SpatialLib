@@ -17,12 +17,14 @@ The library currently contains:
 2. Vectors
 3. Rectangles
 4. Drawable extension (DOM/jQuery based)
-    a. Drawable Rectangle
-    b. Drawable Ellipse
+
+    1. Drawable Rectangle
+    2. Drawable Ellipse
+
 5. Canvasable extension (canvas/a little jQuery)
-    a. Canvasable Rectangle
-    b. Canvasable Ellipse
-    c. Canvasable Polygon
+    1. Canvasable Rectangle
+    2. Canvasable Ellipse
+    3. Canvasable Polygon
 
 OOJS
 ----
@@ -118,6 +120,6 @@ See `drawing.html` for examples.
 Canvasable
 ----------
 
-Extension library for rendering SpatialLib objects on <canvas />.
+Extension library for rendering SpatialLib objects on &gt;canvas /&lt;.
 
 See `canvasable.html` for examples.

@@ -89,13 +89,27 @@
 
 
 			// ----------- "plotting"
-			var plotW = 500, plotH = 200;
+			DEBUGMODE = false;
+			var plotW = 500, plotH = 400;
 			SpatialLib.Canvasable.canvasInit('#plot', plotW);
-			var points = [];
+			var points = [], y;
 			for(var i = 0; i < plotW; i++ ) {
-				points.push(new SpatialLib.Point(i,Math.random()*plotH));
+				y = Math.sin(i*6/180*Math.PI); // accelerated sine curve
+				y *= plotH/2; // scale to half canvas height
+				y += plotH/2; // shift so baseline is middle canvas
+				y += Math.random() * plotH/5; // jaggy
+				points.push(new SpatialLib.Point(i, y));
 			}
-			new SpatialLib.CanvasablePolygon( points, { scale: true, canvas: '#plot', ink: 'stroke', pointSize:2, close: false } );
+			var plot = new SpatialLib.Plot(points);
+			new SpatialLib.CanvasablePolygon( plot, { scale: true, canvas: '#plot', ink: 'stroke', pointSize:2 } );
+			// smooth: 3
+			new SpatialLib.CanvasablePolygon( plot.clone().smooth(3), { scale: true, canvas: '#plot', ink: 'stroke', pointSize:2, strokeColor: '#ff0000', fillColor: '#ff0000' } );
+			// smooth: 10
+			new SpatialLib.CanvasablePolygon( plot.clone().smooth(5), { scale: true, canvas: '#plot', ink: 'stroke', pointSize:2, strokeColor: '#00ff00', fillColor: '#00ff00' } );
+			// smooth: weighted 10
+			DEBUGMODE = true;
+			new SpatialLib.CanvasablePolygon( plot.clone().smooth(5, true, function(i){ return 1/i; }), { scale: true, canvas: '#plot', ink: 'stroke', pointSize:2, strokeColor: '#0000ff', fillColor: '#0000ff' } );
+
 
 
 		})(jQuery);
