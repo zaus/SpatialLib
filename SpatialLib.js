@@ -362,7 +362,7 @@
 			/// <param name="cb" type="function">callback function to apply to each vertex; provide as fn(vertex, index)</param>
 			for(var i in this.Points) {
 				// allow short-circuitng
-				if( false === cb.call(this, this.vertex(i), i) ) return; // in scope
+				if( false === cb.call(this, this.vertex(i), parseInt(i)) ) return; // in scope
 			}
 		}
 		,
@@ -469,12 +469,12 @@
 				, setc = false !== isYAxis ? function(p, v) { p.y = v; } : function(p, v){ p.x = v; } // which point are we setting
 				;
 
-				_debug('getter', getc); debugger;
 			// if weightingFn not supplied, weight = 1
 			if( undefined === weightingFn || typeof weightingFn != "function" )
 				weightingFn = function() { return 1; }
 
 			this.foreach(function(p, n) {
+				n = parseInt(n); //wtf, is this important
 				// start with current point
 				sum = getc(p)
 				// get offsets
@@ -492,7 +492,7 @@
 						coord = getc( coord );
 						sum += coord * weightingFn(i, coord);
 					}
-					_debug('    ', n, i, n+i, coord, sum);
+					_debug('    ', n, i, (n+i), coord, sum);
 				}
 				avgd.push( [sum / divisor] );
 
